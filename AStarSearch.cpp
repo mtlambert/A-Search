@@ -1,15 +1,9 @@
 #include "AStarSearch.h"
 
-#include <iostream>
-#include <vector>
-#include <fstream>
-#include <sstream>
-#include <string>
-#include <algorithm>
 
 struct AStar::node {
 	std::array<int, 2> y_x;
-
+	std::vector<std::array<int, 2>> visited;
 	int g_val = 0;
 	int f_val = 0;
 };
@@ -117,6 +111,39 @@ void AStar::PrintGrid (){
 	}
 }
 
+void AStar::PrintSolution(std::vector<std::array<int, 2>> path) {
+	std::vector<std::vector<int>> solution = maze;
+	for (std::array<int, 2> n: path) {
+		solution[n[0]][n[1]] = 2;
+	}
+	solution[start[0]][start[1]] = 3;
+	solution[goal[0]][goal[1]] = 4;
+	int x_size = solution[0].size();
+	int y_size = solution.size();
+	for (int i = 0; i < y_size; i++){
+		for (int j = 0; j < x_size; j++){
+			switch (solution[i][j]){
+				case 0:
+					std::cout << " .";
+					break;
+				case 1:
+					std::cout << " O";
+					break;
+				case 2:
+					std::cout << " *";
+					break;
+				case 3:
+					std::cout << " S";
+					break;
+				case 4:
+					std::cout << " G";
+					break;
+			}
+		}
+		std::cout << std::endl;
+	}
+}
+
 int AStar::CalcH(std::array<int, 2> y_x){
 	return abs(y_x[0]-goal[0]) + abs(y_x[1]-goal[1]);
 }
@@ -137,11 +164,18 @@ std::vector<AStar::node> AStar::ExpandNode (AStar::node &expand_node){
 	std::vector<AStar::node> expand_list;
 	int x_size = maze[0].size()-1; // 9
 	int y_size = maze.size()-1; // 6
+	
 	// top
 	if (expand_node.y_x[0] != 0){
-		if (grid[expand_node.y_x[0]-1][expand_node.y_x[1]] == State::kOpen ||grid[expand_node.y_x[0]-1][expand_node.y_x[1]] == State::kGoal){
-			AStar::node add_node {{expand_node.y_x[0]-1, expand_node.y_x[1]}, expand_node.g_val+1, 0};
+		if (grid[expand_node.y_x[0]-1][expand_node.y_x[1]] == State::kOpen || grid[expand_node.y_x[0]-1][expand_node.y_x[1]] == State::kGoal){
+			AStar::node add_node {{expand_node.y_x[0]-1, expand_node.y_x[1]}, {}, expand_node.g_val+1, 0};
 			SetFVal(add_node);
+			
+			for (std::array<int, 2> n: expand_node.visited) {
+				add_node.visited.push_back(n);
+			}
+			add_node.visited.push_back(expand_node.y_x);
+			
 			expand_list.push_back(add_node);
 			grid[expand_node.y_x[0]-1][expand_node.y_x[1]] = State::kVisited;
 			//std::cout << "top" << "\n";
@@ -150,8 +184,14 @@ std::vector<AStar::node> AStar::ExpandNode (AStar::node &expand_node){
 	// bottom
 	if (expand_node.y_x[0] < y_size){
 		if (grid[expand_node.y_x[0]+1][expand_node.y_x[1]] == State::kOpen || grid[expand_node.y_x[0]+1][expand_node.y_x[1]] == State::kGoal){
-			AStar::node add_node {{expand_node.y_x[0]+1, expand_node.y_x[1]}, expand_node.g_val+1, 0};
+			AStar::node add_node {{expand_node.y_x[0]+1, expand_node.y_x[1]}, {}, expand_node.g_val+1, 0};
 			SetFVal(add_node);
+			
+			for (std::array<int, 2> n: expand_node.visited) {
+				add_node.visited.push_back(n);
+			}
+			add_node.visited.push_back(expand_node.y_x);
+			
 			expand_list.push_back(add_node);
 			grid[expand_node.y_x[0]+1][expand_node.y_x[1]] = State::kVisited;
 			//std::cout << "bottom" << "\n";
@@ -160,8 +200,14 @@ std::vector<AStar::node> AStar::ExpandNode (AStar::node &expand_node){
 	// left
 	if (expand_node.y_x[1] != 0){
 		if (grid[expand_node.y_x[0]][expand_node.y_x[1]-1] == State::kOpen || grid[expand_node.y_x[0]][expand_node.y_x[1]-1] == State::kGoal){
-			AStar::node add_node {{expand_node.y_x[0], expand_node.y_x[1]-1}, expand_node.g_val+1, 0};
+			AStar::node add_node {{expand_node.y_x[0], expand_node.y_x[1]-1}, {}, expand_node.g_val+1, 0};
 			SetFVal(add_node);
+			
+			for (std::array<int, 2> n: expand_node.visited) {
+				add_node.visited.push_back(n);
+			}
+			add_node.visited.push_back(expand_node.y_x);
+			
 			expand_list.push_back(add_node);
 			grid[expand_node.y_x[0]][expand_node.y_x[1]-1] = State::kVisited;
 			//std::cout << "left" << "\n";
@@ -170,8 +216,14 @@ std::vector<AStar::node> AStar::ExpandNode (AStar::node &expand_node){
 	// right
 	if (expand_node.y_x[1] < x_size){
 		if (grid[expand_node.y_x[0]][expand_node.y_x[1]+1] == State::kOpen || grid[expand_node.y_x[0]][expand_node.y_x[1]+1] == State::kGoal){
-			AStar::node add_node {{expand_node.y_x[0], expand_node.y_x[1]+1}, expand_node.g_val+1, 0};
+			AStar::node add_node {{expand_node.y_x[0], expand_node.y_x[1]+1}, {}, expand_node.g_val+1, 0};
 			SetFVal(add_node);
+			
+			for (std::array<int, 2> n: expand_node.visited) {
+				add_node.visited.push_back(n);
+			}
+			add_node.visited.push_back(expand_node.y_x);
+			
 			expand_list.push_back(add_node);
 			grid[expand_node.y_x[0]][expand_node.y_x[1]+1] = State::kVisited;
 			//std::cout << "right" << "\n";
@@ -183,7 +235,7 @@ std::vector<AStar::node> AStar::ExpandNode (AStar::node &expand_node){
 
 void AStar::Search(){
 	std::vector<AStar::node> open;
-	AStar::node start_node {start, 0, 0};
+	AStar::node start_node {start, {}, 0, 0};
 	SetFVal(start_node);
 	open.push_back(start_node);
 	AStar::node current;
@@ -193,10 +245,19 @@ void AStar::Search(){
 		open.pop_back();
 		//std::cout << "Current: " << current.y_x[0] << ", " << current.y_x[1] << std::endl;
 		if (current.y_x[0] == goal[0] && current.y_x[1] == goal[1]){
+			current.visited.push_back(current.y_x);
 			std::cout << "Path Found (G=" << current.g_val << ")" << std::endl;
 			grid[start[0]][start[1]] = State::kStart;
 			grid[goal[0]][goal[1]] = State::kGoal;
-			PrintGrid();
+			
+			// final path saved below for modifying and printinf maze solution
+			std::vector<std::array<int, 2>> final_path = current.visited;
+			std::cout << "Solution: " << "\n";
+			for (std::array<int, 2> n: final_path) {
+				std::cout << n[0] << ", " << n[1] << std::endl;
+			}
+			PrintSolution(final_path);
+			
 			return;
 		}
 		grid[current.y_x[0]][current.y_x[1]] = State::kPath;
@@ -211,3 +272,13 @@ void AStar::Search(){
 	PrintGrid();
 }
 
+
+
+// Recursive Search
+
+void AStar::PrintPath(AStar::node finish){
+	for (std::array<int, 2> n: finish.visited) {
+		std::cout << n[0] << ", " << n[1] << " | ";
+	}
+	std::cout << std::endl;
+}
